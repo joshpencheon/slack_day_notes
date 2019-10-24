@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'bundler/setup'
+require 'csv'
 require 'highline'
 require 'slack'
 
@@ -44,11 +45,24 @@ module Daynotes
     Post.new(
       Time.at(message.ts.to_f),
       user_map[message.user],
-      message.text
+      parse_message_text(message.text)
     )
+  end
+
+  def parse_message_text(text)
+    text.gsub!(/<#\w+?\|(\w+?)>/) { "##{$1}" }
+
+    text.gsub!(/<@(\w+?)>/) { "#{user_map[$1]}" }
+
+    text
   end
 end
 
 posts = Daynotes.posts
 
-binding.irb
+CSV.generate do |csv|
+  csv << %w(Date User Notes)
+  posts.sort_by(&:date).each do |post|
+    csv << [post.date, post.user, post.message]
+  end
+end
