@@ -13,6 +13,18 @@ class Post
   end
 
   def split_by_day
+    historic_lines, today_lines = historic_and_current_message_lines
+
+    day_slices = day_slices_for(historic_lines, today_lines)
+
+    dated_fragments_for(day_slices).map do |date, body_fragments|
+      Post.new(date, user, body_fragments.reverse.join("\n"))
+    end
+  end
+
+  private
+
+  def historic_and_current_message_lines
     chunks = message.lines.chunk { |line| day_splitter?(line) }.to_a
 
     if (splitter, recent_lines = chunks.last) && !splitter
@@ -23,29 +35,31 @@ class Post
       today_lines = []
     end
 
+    [historic_lines, today_lines]
+  end
+
+  def day_slices_for(historic_lines, today_lines)
     day_slices = historic_lines.slice_when do |line_a, line_b|
       day_splitter?(line_b)
     end.to_a
 
     day_slices << today_lines if today_lines.any?
+    day_slices
+  end
 
-
-    day_chunks = Hash.new { |hash, key| hash[key] = [] }
-
+  def dated_fragments_for(day_slices)
+    fragments_by_day = Hash.new { |hash, key| hash[key] = [] }
     today = date
+
     day_slices.reverse.each do |lines|
       dateref, body = extract_date_from(lines)
       post_date = relative_date(today, dateref)
       today = post_date # parse next chunks relatively
-      day_chunks[post_date] << body
+      fragments_by_day[post_date] << body
     end
 
-    day_chunks.map do |date, body_fragments|
-      Post.new(date, user, body_fragments.reverse.join("\n"))
-    end
+    fragments_by_day
   end
-
-  private
 
   # Does the current message line explicitly reference
   # a particular day?
