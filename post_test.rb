@@ -13,6 +13,14 @@ class PostTest < Minitest::Test
     assert_parses [[1.day.ago.to_date, 'something']], "[yesterday] something"
   end
 
+  def test_parsing_explicit_today
+    assert_parses [[Date.today, 'something']], "[Today] something"
+  end
+
+  def test_parsing_tomorrow
+    assert_parses [[1.day.from_now.to_date, 'something']], "[tomorrow] something"
+  end
+
   def test_parsing_todays_date
     now = Time.now
     day = now.strftime('%A')
@@ -69,7 +77,7 @@ class PostTest < Minitest::Test
   private
 
   def assert_parses(expected_results, message)
-    posts = Post.new(Time.now, 'josh', message).split_posts
+    posts = Post.new(Time.now, 'josh', message).split_by_day
 
     assert_equal expected_results.length, posts.length
 

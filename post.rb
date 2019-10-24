@@ -12,7 +12,7 @@ class Post
     @message = message
   end
 
-  def split_posts
+  def split_by_day
     chunks = message.lines.chunk { |line| day_splitter?(line) }.to_a
 
     if (splitter, recent_lines = chunks.last) && !splitter
@@ -73,5 +73,7 @@ class Post
     # If we're jumping more than a week, parse relative to tomorrow
     # so e.g. today's day means today rather than a week ago
     Chronic.parse(dateref, now: today + 1.day, context: :past).to_date
+  rescue
+    today
   end
 end
