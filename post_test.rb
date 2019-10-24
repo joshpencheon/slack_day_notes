@@ -20,15 +20,15 @@ class PostTest < Minitest::Test
     assert_parses [[now.to_date, 'something']], "[#{day}] something"
   end
 
-  # def test_parsing_todays_date_multiline
-  #   now = Time.now
-  #   day = now.strftime('%A')
+  def test_parsing_todays_date_multiline
+    now = Time.now
+    day = now.strftime('%A')
 
-  #   assert_parses [[now.to_date, "something\nmore"]], <<~MESSAGE
-  #     [#{day}] something
-  #     more
-  #   MESSAGE
-  # end
+    assert_parses [[now.to_date, "something\nmore"]], <<~MESSAGE
+      [#{day}] something
+      more
+    MESSAGE
+  end
 
   def test_splitting_messages_with_just_today
     assert_parses [[Date.today, "bar\nbaz"]], <<~MESSAGE
@@ -78,5 +78,4 @@ class PostTest < Minitest::Test
       assert_equal date, posts[index].date
     end
   end
-
 end

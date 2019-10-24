@@ -29,13 +29,19 @@ class Post
 
     day_slices << today_lines if today_lines.any?
 
-    today = date
 
-    day_slices.reverse.map do |lines|
+    day_chunks = Hash.new { |hash, key| hash[key] = [] }
+
+    today = date
+    day_slices.reverse.each do |lines|
       dateref, body = extract_date_from(lines)
-      post_time = relative_time(today, dateref)
-      today = post_time # parse next chunks relatively
-      Post.new(post_time, user, body)
+      post_date = relative_date(today, dateref)
+      today = post_date # parse next chunks relatively
+      day_chunks[post_date] << body
+    end
+
+    day_chunks.map do |date, body_fragments|
+      Post.new(date, user, body_fragments.reverse.join("\n"))
     end
   end
 
@@ -58,7 +64,7 @@ class Post
     end
   end
 
-  def relative_time(today, dateref)
+  def relative_date(today, dateref)
     return today if dateref.nil?
 
     relative = Chronic.parse(dateref, now: today, context: :past).to_date
