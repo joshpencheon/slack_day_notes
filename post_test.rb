@@ -81,11 +81,46 @@ class PostTest < Minitest::Test
     end
   end
 
+  def test_multiday
+    wednesday = Date.new(2019, 10, 23)
+    thursday = Date.new(2019, 10, 24)
+    friday = Date.new(2019, 10, 25)
+
+    Timecop.travel(friday) do
+      expected = [[friday, 'foo'], [thursday, 'foo'], [wednesday, 'foo']]
+      assert_parses expected, <<~MESSAGE
+        [wed, thu & fri] foo
+      MESSAGE
+    end
+  end
+
+  def test_multiday_with_gaps
+    last_thursday = Date.new(2019, 10, 17)
+    last_friday = Date.new(2019, 10, 18)
+    monday = Date.new(2019, 10, 21)
+    thursday = Date.new(2019, 10, 24)
+    friday = Date.new(2019, 10, 25)
+
+    Timecop.travel(friday) do
+      expected = [
+        [friday, 'quix'], [thursday, 'baz'],
+        [monday, 'foo'], [last_friday, 'foo'], [last_thursday, 'bar']
+      ]
+      assert_parses expected, <<~MESSAGE
+        [thursday] bar
+        [friday, monday] foo
+        [thursday] baz
+        quix
+      MESSAGE
+    end
+  end
+
   private
 
   def assert_parses(expected_results, message)
     posts = Post.new(Time.now, 'josh', message).split_by_day
 
+    puts posts.inspect if expected_results.length != posts.length
     assert_equal expected_results.length, posts.length
 
     expected_results.each_with_index do |(date, message), index|

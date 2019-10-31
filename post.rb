@@ -2,7 +2,7 @@ require 'active_support/all'
 require 'chronic'
 
 class Post
-  DAY_SPLITTER_REGEXP = /^[\{\[](?<dateref>[^\]\}]*?)[\}\]]\s*(?<body>.*)/m
+  DAY_SPLITTER_REGEXP = /^[\{\[](?<daterefs>[^\]\}]*?)[\}\]]\s*(?<body>.*)/m
 
   attr_accessor :date, :user, :message
 
@@ -52,10 +52,13 @@ class Post
     today = date
 
     day_slices.reverse.each do |lines|
-      dateref, body = extract_date_from(lines)
-      post_date = relative_date(today, dateref)
-      today = post_date # parse next chunks relatively
-      fragments_by_day[post_date] << body
+      daterefs, body = extract_dates_from(lines)
+      post_dates = relative_dates(today, daterefs)
+      today = post_dates.first # parse next chunks relatively
+
+      post_dates.each do |post_date|
+        fragments_by_day[post_date] << body
+      end
     end
 
     fragments_by_day
@@ -67,27 +70,34 @@ class Post
     line.match?(DAY_SPLITTER_REGEXP)
   end
 
-  def extract_date_from(lines)
+  def extract_dates_from(lines)
     message = lines.map(&:strip).join("\n")
     match = message.match(DAY_SPLITTER_REGEXP)
 
     if match
-      [match[:dateref], match[:body]]
+      [match[:daterefs], match[:body]]
     else
-      [nil, message]
+      ['', message]
     end
   end
 
-  def relative_date(today, dateref)
-    return today if dateref.nil?
+  def relative_dates(today, daterefs)
+    date_array = daterefs.split(/and|;|,|&|\s+/).map(&:strip).reject(&:empty?)
+    return [today] if date_array.empty?
 
-    relative = Chronic.parse(dateref, now: today, context: :past).to_date
-    return relative unless today - 1.week >= relative
+    date_array.reverse.map do |dateref|
+      relative = Chronic.parse(dateref, now: today, context: :past).to_date
 
-    # If we're jumping more than a week, parse relative to tomorrow
-    # so e.g. today's day means today rather than a week ago
-    Chronic.parse(dateref, now: today + 1.day, context: :past).to_date
-  rescue
-    today
+      if today - 1.week >= relative
+        # If we're jumping more than a week, parse relative to tomorrow
+        # so e.g. today's day means today rather than a week ago
+        relative = Chronic.parse(dateref, now: today + 1.day, context: :past).to_date
+      end
+
+      today = relative
+      relative
+    rescue
+      today
+    end
   end
 end
