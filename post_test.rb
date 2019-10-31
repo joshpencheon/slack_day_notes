@@ -17,6 +17,13 @@ class PostTest < Minitest::Test
     assert_parses [[Date.today, 'something']], "[Today] something"
   end
 
+  def test_parsing_rubbish_tags
+    assert_parses [[Date.today, 'something']], "[wibble] something"
+    assert_parses [[Date.today, 'something']], "[] something"
+    assert_parses [[Date.today, 'something']], "[;} something"
+    assert_parses [[Date.today, 'something']], "something"
+  end
+
   def test_parsing_tomorrow
     assert_parses [[1.day.from_now.to_date, 'something']], "[tomorrow] something"
   end

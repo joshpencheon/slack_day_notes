@@ -2,7 +2,7 @@ require 'active_support/all'
 require 'chronic'
 
 class Post
-  DAY_SPLITTER_REGEXP = /^[\{\[](?<dateref>\w+?)[\}\]]\s*(?<body>.*)/m
+  DAY_SPLITTER_REGEXP = /^[\{\[](?<dateref>[^\]\}]*?)[\}\]]\s*(?<body>.*)/m
 
   attr_accessor :date, :user, :message
 
